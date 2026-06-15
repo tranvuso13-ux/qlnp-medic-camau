@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QLNP — Khoa Xét Nghiệm Medic Cà Mau</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --xanh:    #1a6b3a;
+  --xanh2:   #2d9d5c;
+  --xanh-lt: #e8f5ee;
+  --cam:     #e07020;
+  --do:      #c0392b;
+  --xam:     #5a6472;
+  --xam-lt:  #f4f6f8;
+  --trang:   #ffffff;
+  --vien:    #dde3ea;
+  --chu:     #1a2332;
+  --r:       8px;
+  --shadow:  0 2px 10px rgba(0,0,0,.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--xam-lt); color: var(--chu); font-size: 14px; }
+
+/* ── HEADER ── */
+#header {
+  background: var(--xanh);
+  color: #fff;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+}
+#header h1 { font-size: 16px; font-weight: 700; letter-spacing: .3px; }
+#header span { font-size: 12px; opacity: .8; }
+#btn-logout {
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.3);
+  color: #fff; padding: 5px 12px; border-radius: 5px;
+  cursor: pointer; font-size: 13px;
+}
+#btn-logout:hover { background: rgba(255,255,255,.25); }
+
+/* ── LOGIN ── */
+#screen-login {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; background: linear-gradient(135deg, #1a4a28, #2d9d5c);
+}
+.login-box {
+  background: #fff; border-radius: 16px; padding: 48px 40px;
+  text-align: center; width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,.2);
+}
+.login-box h2 { color: var(--xanh); font-size: 22px; margin-bottom: 6px; }
+.login-box p  { color: var(--xam); font-size: 13px; margin-bottom: 28px; }
+.login-box .logo { font-size: 48px; margin-bottom: 16px; }
+#btn-google {
+  width: 100%; padding: 13px;
+  background: var(--xanh); color: #fff;
+  border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: background .2s;
+}
+#btn-google:hover { background: #145a30; }
+
+/* ── NAV TABS ── */
+#nav {
+  background: var(--trang);
+  border-bottom: 2px solid var(--vien);
+  display: flex; padding: 0 16px;
+  position: sticky; top: 52px; z-index: 90;
+}
+.tab {
+  padding: 13px 18px; cursor: pointer; font-size: 14px; font-weight: 500;
+  color: var(--xam); border-bottom: 3px solid transparent; margin-bottom: -2px;
+  transition: all .15s; white-space: nowrap;
+}
+.tab:hover { color: var(--xanh); }
+.tab.active { color: var(--xanh); border-bottom-color: var(--xanh); font-weight: 700; }
+.tab .badge {
+  background: var(--cam); color: #fff;
+  font-size: 11px; padding: 1px 6px; border-radius: 10px; margin-left: 5px;
+}
+
+/* ── MAIN ── */
+#main { padding: 20px; max-width: 960px; margin: 0 auto; }
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ── CARD ── */
+.card {
+  background: var(--trang); border-radius: var(--r);
+  box-shadow: var(--shadow); padding: 20px; margin-bottom: 16px;
+}
+.card h3 { font-size: 15px; color: var(--xanh); margin-bottom: 14px; border-bottom: 1px solid var(--vien); padding-bottom: 10px; }
+
+/* ── FORM ── */
+.form-row { margin-bottom: 14px; }
+label { display: block; font-size: 12px; font-weight: 600; color: var(--xam); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .4px; }
+input, select, textarea {
+  width: 100%; padding: 9px 12px;
+  border: 1px solid var(--vien); border-radius: 6px;
+  font-size: 14px; color: var(--chu);
+  background: #fff; transition: border .15s;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none; border-color: var(--xanh2); box-shadow: 0 0 0 3px rgba(45,157,92,.12);
+}
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media(max-width:580px){ .form-grid { grid-template-columns: 1fr; } }
+
+/* ── BUTTONS ── */
+.btn {
+  padding: 9px 20px; border: none; border-radius: 6px;
+  font-size: 14px; font-weight: 600; cursor: pointer; transition: all .15s;
+}
+.btn-primary { background: var(--xanh); color: #fff; }
+.btn-primary:hover { background: #145a30; }
+.btn-danger  { background: var(--do); color: #fff; }
+.btn-danger:hover { background: #a93226; }
+.btn-outline { background: transparent; border: 1px solid var(--vien); color: var(--xam); }
+.btn-outline:hover { border-color: var(--xanh); color: var(--xanh); }
+
+/* ── TABLE ── */
+.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tbl th { background: var(--xanh); color: #fff; padding: 9px 12px; text-align: left; font-weight: 600; }
+.tbl td { padding: 9px 12px; border-bottom: 1px solid var(--vien); }
+.tbl tr:hover td { background: var(--xam-lt); }
+.tbl-wrap { overflow-x: auto; }
+
+/* ── BADGE TRẠNG THÁI ── */
+.tt {
+  display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;
+}
+.tt-cho   { background: #fff3cd; color: #856404; }
+.tt-duyet { background: #d1f0db; color: #155724; }
+.tt-tu    { background: #f8d7da; color: #721c24; }
+
+/* ── LỊCH TRỰC ── */
+.lich-grid {
+  display: grid;
+  grid-template-columns: 140px repeat(7, 1fr);
+  gap: 2px; font-size: 12px;
+}
+.lich-cell {
+  background: var(--trang); border: 1px solid var(--vien);
+  padding: 6px 8px; min-height: 52px; border-radius: 4px;
+}
+.lich-header { background: var(--xanh); color: #fff; font-weight: 700; text-align: center; padding: 8px 4px; border-radius: 4px; font-size: 12px; }
+.lich-pos    { background: var(--xanh-lt); font-weight: 600; color: var(--xanh); display: flex; align-items: center; padding: 6px 8px; border-radius: 4px; font-size: 12px; }
+.nv-chip {
+  display: inline-block; background: var(--xanh); color: #fff;
+  border-radius: 4px; padding: 2px 7px; margin: 2px; font-size: 11px; cursor: pointer;
+}
+.nv-chip:hover { background: var(--do); }
+.add-nv-btn {
+  background: none; border: 1px dashed var(--vien); border-radius: 4px;
+  color: var(--xam); font-size: 11px; padding: 2px 6px; cursor: pointer; margin: 2px;
+}
+.add-nv-btn:hover { border-color: var(--xanh); color: var(--xanh); }
+
+/* ── ALERT ── */
+.alert { padding: 10px 14px; border-radius: 6px; margin-bottom: 12px; font-size: 13px; }
+.alert-ok  { background: var(--xanh-lt); color: #155724; border-left: 4px solid var(--xanh2); }
+.alert-err { background: #f8d7da; color: #721c24; border-left: 4px solid var(--do); }
+
+/* ── MODAL ── */
+.modal-bg {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.45); z-index: 200; align-items: center; justify-content: center;
+}
+.modal-bg.open { display: flex; }
+.modal {
+  background: #fff; border-radius: 12px; padding: 24px;
+  width: 480px; max-width: 95vw; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+}
+.modal h3 { color: var(--xanh); margin-bottom: 16px; }
+.modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+
+/* ── ES SCORE ── */
+.es-pos { color: var(--xanh2); font-weight: 700; }
+.es-neg { color: var(--do); font-weight: 700; }
+
+/* ── LOADING ── */
+.loading { text-align: center; padding: 40px; color: var(--xam); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="screen-login">
+  <div class="login-box">
+    <div class="logo">🔬</div>
+    <h2>QLNP Khoa Xét Nghiệm</h2>
+    <p>Bệnh viện MEDIC Cà Mau</p>
+    <button id="btn-google" onclick="dangNhap()">🔑 Đăng nhập bằng Google</button>
+    <p style="margin-top:16px;font-size:12px;color:#aaa">Chỉ dành cho nhân viên Khoa XN</p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="screen-app" style="display:none">
+  <div id="header">
+    <h1>🔬 QLNP — Khoa Xét Nghiệm</h1>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span id="user-name"></span>
+      <button id="btn-logout" onclick="dangXuat()">Đăng xuất</button>
+    </div>
+  </div>
+
+  <div id="nav">
+    <div class="tab active" onclick="showTab('don-nghi')" id="tab-don-nghi">📋 Đơn nghỉ phép</div>
+    <div class="tab" onclick="showTab('quan-ly')" id="tab-quan-ly">✅ Quản lý đơn <span class="badge" id="badge-cho">0</span></div>
+    <div class="tab" onclick="showTab('lich-truc')" id="tab-lich-truc">📅 Lịch trực</div>
+    <div class="tab" onclick="showTab('nhan-vien')" id="tab-nhan-vien">👥 Nhân viên</div>
+  </div>
+
+  <div id="main">
+
+    <!-- TAB 1: GỬI ĐƠN NGHỈ PHÉP -->
+    <div id="screen-don-nghi" class="screen active">
+      <div class="card">
+        <h3>📝 Gửi đơn xin nghỉ phép</h3>
+        <div id="alert-gui"></div>
+        <div class="form-grid">
+          <div class="form-row">
+            <label>Họ tên</label>
+            <input id="f-hoten" type="text" readonly style="background:#f4f6f8">
+          </div>
+          <div class="form-row">
+            <label>Loại hình nghỉ</label>
+            <select id="f-loaihinh">
+              <option>Phép năm</option>
+              <option>Nghỉ bù</option>
+              <option>Nghỉ không lương</option>
+              <option>Nghỉ thai sản</option>
+              <option>Nghỉ ốm</option>
+              <option>Nghỉ việc riêng</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Từ ngày</label>
+            <input id="f-tungay" type="date">
+          </div>
+          <div class="form-row">
+            <label>Đến ngày</label>
+            <input id="f-denngay" type="date">
+          </div>
+          <div class="form-row">
+            <label>Loại ngày nghỉ</label>
+            <select id="f-loainghi">
+              <option value="Nguyên ngày">Nguyên ngày</option>
+              <option value="Nửa ngày sáng">Nửa ngày sáng</option>
+              <option value="Nửa ngày chiều">Nửa ngày chiều</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Số ngày (tự tính)</label>
+            <input id="f-songay" type="text" readonly style="background:#f4f6f8;font-weight:700;color:var(--xanh)">
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Lý do</label>
+          <textarea id="f-lydo" rows="3" placeholder="Nêu rõ lý do xin nghỉ..."></textarea>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button class="btn btn-primary" onclick="guiDon()">📤 Gửi đơn</button>
+          <button class="btn btn-outline" onclick="xoaForm()">🗑 Xóa</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📄 Đơn đã gửi của tôi</h3>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr>
+              <th>Mã đơn</th><th>Loại</th><th>Từ ngày</th><th>Đến ngày</th><th>Số ngày</th><th>Trạng thái</th>
+            </tr></thead>
+            <tbody id="tb-don-toi"><tr><td colspan="6" class="loading">Đang tải...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: QUẢN LÝ ĐƠN (ADMIN) -->
+    <div id="screen-quan-ly" class="screen">
+      <div class="card" id="admin-only" style="display:none">
+        <h3>⚙️ Quản lý đơn nghỉ phép</h3>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <select id="filter-tt" onchange="loadDonAdmin()" style="width:auto">
+            <option value="">Tất cả trạng thái</option>
+            <option value="Chờ duyệt">Chờ duyệt</option>
+            <option value="Đã duyệt">Đã duyệt</option>
+            <option value="Từ chối">Từ chối</option>
+          </select>
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr>
+              <th>Mã đơn</th><th>Nhân viên</th><th>Loại</th><th>Từ ngày</th><th>Số ngày</th><th>Trạng thái</th><th>Thao tác</th>
+            </tr></thead>
+            <tbody id="tb-don-admin"><tr><td colspan="7" class="loading">Đang tải...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="not-admin" class="card" style="display:none">
+        <p style="color:var(--xam);text-align:center;padding:20px">⛔ Chức năng này chỉ dành cho Admin.</p>
+      </div>
+    </div>
+
+    <!-- TAB 3: LỊCH TRỰC -->
+    <div id="screen-lich-truc" class="screen">
+      <div class="card">
+        <h3>📅 Lịch trực tuần</h3>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+          <button class="btn btn-outline" onclick="tuan(-1)">◀ Tuần trước</button>
+          <strong id="tuan-label" style="min-width:200px;text-align:center"></strong>
+          <button class="btn btn-outline" onclick="tuan(1)">Tuần sau ▶</button>
+          <button class="btn btn-primary" id="btn-luu-lich" onclick="luuLich()" style="display:none">💾 Lưu lịch</button>
+        </div>
+        <div class="tbl-wrap">
+          <div id="lich-container" class="loading">Đang tải...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: NHÂN VIÊN -->
+    <div id="screen-nhan-vien" class="screen">
+      <div class="card">
+        <h3>👥 Danh sách nhân viên</h3>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr>
+              <th>MSNV</th><th>Họ tên</th><th>Chức vụ</th><th>Tổng phép</th><th>Đã dùng</th><th>Còn lại</th><th>Điểm ES</th>
+            </tr></thead>
+            <tbody id="tb-nv"><tr><td colspan="7" class="loading">Đang tải...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /screen-app -->
+
+<!-- MODAL DUYỆT ĐƠN -->
+<div class="modal-bg" id="modal-duyet">
+  <div class="modal">
+    <h3 id="modal-title">Xem đơn nghỉ phép</h3>
+    <div id="modal-body"></div>
+    <div class="form-row" style="margin-top:12px">
+      <label>Ghi chú duyệt</label>
+      <textarea id="modal-ghichu" rows="2" placeholder="Ghi chú (tuỳ chọn)..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="dongModal()">Đóng</button>
+      <button class="btn btn-danger" onclick="xetDon('Từ chối')">❌ Từ chối</button>
+      <button class="btn btn-primary" onclick="xetDon('Đã duyệt')">✅ Duyệt</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════
+const SUPABASE_URL = 'https://cqphfkkklianydralcsi.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_3_N6A2l9U77Sv6q9UtJDvQ_rmxXAoG1';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const ADMIN_EMAILS = ['tranvuso13@gmail.com','dtd989919@gmail.com','buicamnhung2025@gmail.com'];
+const NGAY_TUAN = ['Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7','CN'];
+const POSITIONS = [
+  'Trực chính sáng','Trực phụ sáng','Trực trưa',
+  'Trực chính chiều','Trực phụ chiều','Trực tối','Trực đêm'
+];
+
+let currentUser = null;
+let isAdmin = false;
+let lichData = {};   // key: "pos|day" -> [{msnv,ten}]
+let weekStart = null;
+let currentDonId = null;
+let danhSachNV = [];
+
+// ══════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════
+async function dangNhap() {
+  await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: location.href }
+  });
+}
+
+async function dangXuat() {
+  await sb.auth.signOut();
+  location.reload();
+}
+
+async function khoiTao() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) {
+    document.getElementById('screen-login').style.display = 'flex';
+    return;
+  }
+  currentUser = session.user;
+  isAdmin = ADMIN_EMAILS.includes(currentUser.email);
+
+  document.getElementById('screen-login').style.display = 'none';
+  document.getElementById('screen-app').style.display = 'block';
+  document.getElementById('user-name').textContent = currentUser.email;
+
+  // Hiện tab admin
+  if (isAdmin) {
+    document.getElementById('btn-luu-lich').style.display = '';
+    document.getElementById('admin-only').style.display = 'block';
+  } else {
+    document.getElementById('not-admin').style.display = 'block';
+  }
+
+  // Load dữ liệu
+  await loadNhanVien();
+  prefillForm();
+  loadDonToi();
+  if (isAdmin) loadDonAdmin();
+  initTuan();
+  setupRealtime();
+}
+
+// ══════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════
+function showTab(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ══════════════════════════════════════
+// NHÂN VIÊN
+// ══════════════════════════════════════
+async function loadNhanVien() {
+  const { data } = await sb.from('nhan_vien').select('*').order('msnv');
+  danhSachNV = data || [];
+  const tb = document.getElementById('tb-nv');
+  tb.innerHTML = danhSachNV.map(nv => `
+    <tr>
+      <td>${nv.msnv}</td>
+      <td>${nv.ho_ten}</td>
+      <td>${nv.chuc_vu}</td>
+      <td>${nv.tong_phep}</td>
+      <td>${nv.da_dung}</td>
+      <td><b>${nv.con_lai}</b></td>
+      <td class="${nv.diem_es >= 0 ? 'es-pos':'es-neg'}">${nv.diem_es > 0 ? '+':''}${nv.diem_es}</td>
+    </tr>`).join('');
+}
+
+function prefillForm() {
+  const nv = danhSachNV.find(n => n.email === currentUser.email)
+           || danhSachNV.find(n => currentUser.email.includes(n.msnv?.toLowerCase()));
+  // Fallback: điền email
+  document.getElementById('f-hoten').value = nv ? nv.ho_ten : currentUser.email;
+  tinhSoNgay();
+}
+
+// ══════════════════════════════════════
+// ĐƠN NGHỈ PHÉP — GỬI
+// ══════════════════════════════════════
+function tinhSoNgay() {
+  const t = document.getElementById('f-tungay').value;
+  const d = document.getElementById('f-denngay').value;
+  const loai = document.getElementById('f-loainghi').value;
+  if (!t || !d) { document.getElementById('f-songay').value = ''; return; }
+  const diff = (new Date(d) - new Date(t)) / 86400000 + 1;
+  const so = loai.includes('Nửa') ? diff * 0.5 : diff;
+  document.getElementById('f-songay').value = so > 0 ? so + ' ngày' : 'Lỗi ngày';
+}
+document.getElementById('f-tungay').addEventListener('change', tinhSoNgay);
+document.getElementById('f-denngay').addEventListener('change', tinhSoNgay);
+document.getElementById('f-loainghi').addEventListener('change', tinhSoNgay);
+
+function xoaForm() {
+  ['f-tungay','f-denngay','f-lydo'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-songay').value = '';
+  document.getElementById('alert-gui').innerHTML = '';
+}
+
+async function guiDon() {
+  const tungay  = document.getElementById('f-tungay').value;
+  const denngay = document.getElementById('f-denngay').value;
+  const loainghi = document.getElementById('f-loainghi').value;
+  const loaihinh = document.getElementById('f-loaihinh').value;
+  const lydo    = document.getElementById('f-lydo').value;
+  const hoten   = document.getElementById('f-hoten').value;
+
+  if (!tungay || !denngay || !lydo) {
+    showAlert('alert-gui', 'Vui lòng điền đầy đủ ngày và lý do.', 'err'); return;
+  }
+  const diff = (new Date(denngay) - new Date(tungay)) / 86400000 + 1;
+  if (diff <= 0) { showAlert('alert-gui', 'Ngày kết thúc phải sau ngày bắt đầu.', 'err'); return; }
+  const songay = loainghi.includes('Nửa') ? diff * 0.5 : diff;
+
+  const maDon = 'DN' + Date.now().toString().slice(-8);
+  const nv = danhSachNV.find(n => n.ho_ten === hoten);
+
+  const { error } = await sb.from('don_nghi_phep').insert({
+    ma_don: maDon,
+    msnv: nv?.msnv || null,
+    ho_ten: hoten,
+    loai_nghi: loainghi,
+    loai_hinh: loaihinh,
+    tu_ngay: tungay,
+    den_ngay: denngay,
+    so_ngay: songay,
+    ly_do: lydo,
+    trang_thai: 'Chờ duyệt',
+    nguoi_gui: currentUser.email
+  });
+
+  if (error) { showAlert('alert-gui', 'Lỗi gửi đơn: ' + error.message, 'err'); return; }
+  showAlert('alert-gui', '✅ Đã gửi đơn thành công! Mã đơn: ' + maDon, 'ok');
+  xoaForm();
+  loadDonToi();
+}
+
+async function loadDonToi() {
+  const { data } = await sb.from('don_nghi_phep')
+    .select('*')
+    .eq('nguoi_gui', currentUser.email)
+    .order('ngay_gui', { ascending: false });
+
+  const tb = document.getElementById('tb-don-toi');
+  if (!data || !data.length) {
+    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--xam);padding:20px">Chưa có đơn nào</td></tr>';
+    return;
+  }
+  tb.innerHTML = data.map(d => `
+    <tr>
+      <td><code>${d.ma_don}</code></td>
+      <td>${d.loai_hinh}</td>
+      <td>${fmt(d.tu_ngay)}</td>
+      <td>${fmt(d.den_ngay)}</td>
+      <td>${d.so_ngay}</td>
+      <td><span class="tt ${ttClass(d.trang_thai)}">${d.trang_thai}</span></td>
+    </tr>`).join('');
+}
+
+// ══════════════════════════════════════
+// QUẢN LÝ ĐƠN — ADMIN
+// ══════════════════════════════════════
+async function loadDonAdmin() {
+  if (!isAdmin) return;
+  const tt = document.getElementById('filter-tt').value;
+  let q = sb.from('don_nghi_phep').select('*').order('ngay_gui', { ascending: false });
+  if (tt) q = q.eq('trang_thai', tt);
+  const { data } = await q;
+
+  const cho = (data || []).filter(d => d.trang_thai === 'Chờ duyệt').length;
+  document.getElementById('badge-cho').textContent = cho;
+
+  const tb = document.getElementById('tb-don-admin');
+  if (!data || !data.length) {
+    tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--xam);padding:20px">Không có đơn</td></tr>';
+    return;
+  }
+  tb.innerHTML = data.map(d => `
+    <tr>
+      <td><code>${d.ma_don}</code></td>
+      <td>${d.ho_ten}</td>
+      <td>${d.loai_hinh}</td>
+      <td>${fmt(d.tu_ngay)}</td>
+      <td>${d.so_ngay}</td>
+      <td><span class="tt ${ttClass(d.trang_thai)}">${d.trang_thai}</span></td>
+      <td><button class="btn btn-outline" style="padding:4px 10px;font-size:12px"
+          onclick="moModal('${d.id}')">Xem</button></td>
+    </tr>`).join('');
+}
+
+let donDangXet = null;
+async function moModal(id) {
+  const { data } = await sb.from('don_nghi_phep').select('*').eq('id', id).single();
+  donDangXet = data;
+  document.getElementById('modal-title').textContent = 'Đơn nghỉ phép — ' + data.ho_ten;
+  document.getElementById('modal-ghichu').value = data.ghi_chu_duyet || '';
+  document.getElementById('modal-body').innerHTML = `
+    <table style="width:100%;font-size:13px;border-collapse:collapse">
+      ${row('Mã đơn', data.ma_don)}
+      ${row('Nhân viên', data.ho_ten)}
+      ${row('Loại hình', data.loai_hinh)}
+      ${row('Loại ngày', data.loai_nghi)}
+      ${row('Từ ngày', fmt(data.tu_ngay))}
+      ${row('Đến ngày', fmt(data.den_ngay))}
+      ${row('Số ngày', '<b>' + data.so_ngay + '</b>')}
+      ${row('Lý do', data.ly_do)}
+      ${row('Trạng thái', `<span class="tt ${ttClass(data.trang_thai)}">${data.trang_thai}</span>`)}
+    </table>`;
+  document.getElementById('modal-duyet').classList.add('open');
+}
+
+function row(label, val) {
+  return `<tr><td style="padding:6px 8px;color:var(--xam);width:110px">${label}</td>
+              <td style="padding:6px 8px">${val}</td></tr>`;
+}
+
+function dongModal() {
+  document.getElementById('modal-duyet').classList.remove('open');
+  donDangXet = null;
+}
+
+async function xetDon(trangThai) {
+  if (!donDangXet) return;
+  const ghichu = document.getElementById('modal-ghichu').value;
+  const { error } = await sb.from('don_nghi_phep').update({
+    trang_thai: trangThai,
+    ghi_chu_duyet: ghichu,
+    ngay_duyet: new Date().toISOString()
+  }).eq('id', donDangXet.id);
+
+  if (error) { alert('Lỗi: ' + error.message); return; }
+  dongModal();
+  loadDonAdmin();
+}
+
+// ══════════════════════════════════════
+// LỊCH TRỰC
+// ══════════════════════════════════════
+function initTuan() {
+  const now = new Date();
+  const day = now.getDay(); // 0=CN
+  const diff = day === 0 ? -6 : 1 - day;
+  weekStart = new Date(now);
+  weekStart.setDate(now.getDate() + diff);
+  weekStart.setHours(0,0,0,0);
+  renderLich();
+}
+
+function tuan(delta) {
+  weekStart = new Date(weekStart);
+  weekStart.setDate(weekStart.getDate() + delta * 7);
+  renderLich();
+}
+
+async function renderLich() {
+  const ws = weekStart.toISOString().slice(0,10);
+  const we = new Date(weekStart); we.setDate(we.getDate()+6);
+  document.getElementById('tuan-label').textContent =
+    `${fmt(ws)} – ${fmt(we.toISOString().slice(0,10))}`;
+
+  // Load từ DB
+  const { data } = await sb.from('lich_truc')
+    .select('*').eq('week_start', ws);
+
+  lichData = {};
+  (data||[]).forEach(r => { lichData[r.pos_id + '|' + r.day_index] = r.staff || []; });
+
+  // Render grid
+  const days = Array.from({length:7}, (_,i) => {
+    const d = new Date(weekStart); d.setDate(d.getDate()+i);
+    return d;
+  });
+
+  let html = '<div class="lich-grid">';
+  html += '<div class="lich-header">Ca / Ngày</div>';
+  days.forEach(d => {
+    html += `<div class="lich-header">${NGAY_TUAN[d.getDay()===0?6:d.getDay()-1]}<br>
+             <small>${d.getDate()}/${d.getMonth()+1}</small></div>`;
+  });
+
+  POSITIONS.forEach(pos => {
+    html += `<div class="lich-pos">${pos}</div>`;
+    for (let i = 0; i < 7; i++) {
+      const key = pos + '|' + i;
+      const staff = lichData[key] || [];
+      html += `<div class="lich-cell" id="cell-${btoa(key).replace(/=/g,'')}">`;
+      staff.forEach(nv => {
+        html += `<span class="nv-chip" onclick="xoaNV('${key}','${nv.msnv}')" title="Nhấn để xóa">${nv.ten}</span>`;
+      });
+      if (isAdmin) html += `<button class="add-nv-btn" onclick="themNV('${key}')">+</button>`;
+      html += '</div>';
+    }
+  });
+  html += '</div>';
+  document.getElementById('lich-container').innerHTML = html;
+}
+
+function themNV(key) {
+  const opts = danhSachNV.map(nv =>
+    `<option value="${nv.msnv}">${nv.ho_ten}</option>`).join('');
+  const sel = prompt('Chọn nhân viên:\n' + danhSachNV.map((nv,i)=>`${i+1}. ${nv.ho_ten}`).join('\n') + '\n\nNhập số thứ tự:');
+  if (!sel) return;
+  const idx = parseInt(sel) - 1;
+  if (idx < 0 || idx >= danhSachNV.length) return;
+  const nv = danhSachNV[idx];
+  if (!lichData[key]) lichData[key] = [];
+  if (!lichData[key].find(n => n.msnv === nv.msnv)) {
+    lichData[key].push({ msnv: nv.msnv, ten: nv.ho_ten.split(' ').pop() });
+  }
+  renderLichLocal();
+}
+
+function xoaNV(key, msnv) {
+  if (!isAdmin) return;
+  if (!lichData[key]) return;
+  lichData[key] = lichData[key].filter(n => n.msnv !== msnv);
+  renderLichLocal();
+}
+
+function renderLichLocal() {
+  // Re-render chỉ nội dung cells
+  const days = Array.from({length:7}, (_,i) => {
+    const d = new Date(weekStart); d.setDate(d.getDate()+i); return d;
+  });
+  POSITIONS.forEach(pos => {
+    for (let i = 0; i < 7; i++) {
+      const key = pos + '|' + i;
+      const cellId = 'cell-' + btoa(key).replace(/=/g,'');
+      const cell = document.getElementById(cellId);
+      if (!cell) continue;
+      const staff = lichData[key] || [];
+      cell.innerHTML = staff.map(nv =>
+        `<span class="nv-chip" onclick="xoaNV('${key}','${nv.msnv}')" title="Nhấn để xóa">${nv.ten}</span>`
+      ).join('') + (isAdmin ? `<button class="add-nv-btn" onclick="themNV('${key}')">+</button>` : '');
+    }
+  });
+}
+
+async function luuLich() {
+  if (!isAdmin) return;
+  const ws = weekStart.toISOString().slice(0,10);
+  const upserts = [];
+  POSITIONS.forEach(pos => {
+    for (let i = 0; i < 7; i++) {
+      upserts.push({
+        week_start: ws,
+        pos_id: pos,
+        day_index: i,
+        staff: lichData[pos+'|'+i] || [],
+        updated_at: new Date().toISOString()
+      });
+    }
+  });
+  const { error } = await sb.from('lich_truc').upsert(upserts, { onConflict: 'week_start,pos_id,day_index' });
+  if (error) { alert('Lỗi lưu: ' + error.message); return; }
+  alert('✅ Đã lưu lịch trực!');
+}
+
+// ══════════════════════════════════════
+// REALTIME
+// ══════════════════════════════════════
+function setupRealtime() {
+  sb.channel('qlnp-realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'don_nghi_phep' }, () => {
+      loadDonToi();
+      if (isAdmin) loadDonAdmin();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'lich_truc' }, () => {
+      renderLich();
+    })
+    .subscribe();
+}
+
+// ══════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════
+function fmt(d) {
+  if (!d) return '';
+  const [y,m,day] = d.slice(0,10).split('-');
+  return `${day}/${m}/${y}`;
+}
+function ttClass(tt) {
+  if (tt === 'Đã duyệt') return 'tt-duyet';
+  if (tt === 'Từ chối')  return 'tt-tu';
+  return 'tt-cho';
+}
+function showAlert(id, msg, type) {
+  document.getElementById(id).innerHTML =
+    `<div class="alert alert-${type}">${msg}</div>`;
+  setTimeout(() => { document.getElementById(id).innerHTML = ''; }, 5000);
+}
+
+// ══════════════════════════════════════
+// KHỞI ĐỘNG
+// ══════════════════════════════════════
+khoiTao();
+</script>
+</body>
+</html>
